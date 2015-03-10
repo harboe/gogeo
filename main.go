@@ -1,246 +1,117 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"net/http"
-	"net/url"
-	"strings"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/harboe/gogeo/providers"
+	_ "github.com/harboe/gogeo/providers/bing"
+	_ "github.com/harboe/gogeo/providers/google"
 )
 
-type (
-	Result struct {
-		Address   string  `json:"address"`
-		Latitude  float64 `json:"lat"`
-		Longitude float64 `json:"lng"`
-	}
-	GoogleLocation struct {
-		Latitude  float64 `json:"lat"`
-		Longitude float64 `json:"lng"`
-	}
-	GoogleGeometry struct {
-		Location GoogleLocation `json:"location"`
-	}
-	GoogleResult struct {
-		GoogleGeometry `json:"geometry"`
-		Address        string `json:"formatted_address"`
-	}
-	GoogleResults struct {
-		Results []GoogleResult `json:"results"`
-		Status  string         `json:"status"`
-	}
-)
-
-const (
-	geourl = "https://maps.googleapis.com/maps/api/geocode/json"
-	imgurl = "https://maps.googleapis.com/maps/api/staticmap"
+var (
+	port         string
+	file         string
+	format       string
+	addrList     AddressList
+	locList      LocationList
+	size         string
+	zoom         uint64
+	scale        uint64
+	pretty       bool
+	apikey       string
+	providerKeys = map[string]*string{}
 )
 
 func main() {
-	http.HandleFunc("/", usageHandler)
-	http.HandleFunc("/v1/geo", geoHandler)
-	http.HandleFunc("/v1/geo.png", imgHandler)
-	log.Println(http.ListenAndServe("localhost:8080", nil))
-}
-
-func imgHandler(w http.ResponseWriter, req *http.Request) {
-	results, err := getResults(req)
-
-	if len(results) == 0 || err != nil {
-		displayError(w, req, err)
-	} else {
-
-		qry := url.Values{}
-		markers := ""
-
-		urlQry := req.URL.Query()
-		size := urlQry.Get("size")
-
-		if len(size) == 0 {
-			size = "250x250"
-		} else if strings.Index(size, "x") == -1 {
-			size = size + "x" + size
-		}
-
-		qry.Add("size", size)
-
-		if z := urlQry.Get("zoom"); len(z) > 0 {
-			qry.Add("zoom", z)
-		}
-
-		if s := urlQry.Get("scale"); len(s) > 0 {
-			qry.Add("scale", s)
-		}
-
-		for _, r := range results {
-			markers += fmt.Sprintf("%v,%v|", r.Latitude, r.Longitude)
-		}
-		qry.Add("markers", markers)
-
-		url := fmt.Sprintf("%s?%s", imgurl, qry.Encode())
-		fmt.Println("url:", url)
-
-		resp, err := http.Get(url)
-
-		if err != nil {
-			displayError(w, req, err)
-			return
-		}
-
-		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			displayError(w, req, err)
-			return
-		}
-
-		w.Write(b)
+	serverCmd := &cobra.Command{
+		Use:   "server",
+		Short: "run as a server",
+		Long:  "gogeo: as a rest service",
+		Run:   restService,
 	}
-}
+	serverCmd.Flags().StringVarP(&port, "port", "p", "localhost:8080", "server listing port")
 
-func geoHandler(w http.ResponseWriter, req *http.Request) {
-	results, err := getResults(req)
-
-	if len(results) == 0 || err != nil {
-		displayError(w, req, err)
-	} else {
-		displayResult(w, req, results)
+	rootCmd := &cobra.Command{
+		Use:  "gogeo",
+		Long: "muuha...",
 	}
-}
+	rootCmd.AddCommand(serverCmd)
 
-func usageHandler(w http.ResponseWriter, req *http.Request) {
-	usage := `
-		GOGEO:
-		------
-
-		/v1/geo
-
-		parameters:
-		* address - The street address that you want to geocode, in the format used by the national postal service of the country concerned. 
-		* lat - The textual latitude value for which you wish to obtain the closest, human-readable address.
-		* lng - The textual longitude value for which you wish to obtain the closest, human-readable address.
-		
-		/v1/geo.png
-
-		parameters:
-		* address - The street address that you want to geocode, in the format used by the national postal service of the country concerned. 
-		* lat - The textual latitude value for which you wish to obtain the closest, human-readable address.
-		* lng - The textual longitude value for which you wish to obtain the closest, human-readable address.
-		* size (optional)
-		* zoom (optional)
-		* scale (optional)
-
-		`
-
-	w.Write([]byte(usage))
-}
-
-func displayError(w http.ResponseWriter, req *http.Request, err error) {
-	usageHandler(w, req)
-	fmt.Fprintln(w, "error processing:", req.URL.RawQuery, "\n\t\terr:", err)
-}
-
-func displayResult(w http.ResponseWriter, req *http.Request, results []Result) {
-	if b, err := json.Marshal(&results); err != nil {
-		displayError(w, req, err)
-	} else {
-		w.Write(b)
-	}
-}
-
-func getResults(req *http.Request) ([]Result, error) {
-	url := req.URL
-	values := url.Query()
-
-	var results = []Result{}
-	var err error
-
-	if address, ok := values["address"]; ok {
-		results, err = lookupAddress(address)
-	}
-
-	lat, hasLat := values["lat"]
-	lng, hasLng := values["lng"]
-
-	if hasLat && hasLng {
-		results, err = lookupLocation(lat, lng)
-	}
-
-	return results, err
-}
-
-func lookupAddress(address []string) ([]Result, error) {
-	results := []Result{}
-
-	for _, a := range address {
-		qry := url.Values{}
-		qry.Add("address", a)
-
-		url := fmt.Sprintf("%s?%s", geourl, qry.Encode())
-
-		if r, err := lookup(url); err != nil {
-			return results, err
-		} else {
-			results = append(results, r)
+	for _, p := range providers.GeoProviders() {
+		c := &cobra.Command{
+			Use:     p,
+			Short:   p + " provider",
+			Long:    p + " provider",
+			Example: "$ gogeo " + p + " -a \"vigerslev alle 77, valby\" -l 55.694639,12.4796647",
+			Run:     provider,
 		}
-	}
+		f := c.Flags()
 
-	return results, nil
+		f.VarP(
+			&addrList, "address", "a", "addresses")
+		f.VarP(
+			&locList, "location", "l", "latitude,longitude")
+		f.StringVarP(
+			&file, "file", "f", "", "output file")
+		f.StringVar(
+			&format, "format", "json", "output format json|xml|txt|png")
+		f.BoolVar(
+			&pretty, "pretty", false, "pretty print")
+		f.StringVar(
+			&apikey, "key", "", "optional depending on the specific provider")
+		f.StringVar(
+			&size, "size", "250x250", "map size use for png")
+		f.Uint64Var(
+			&scale, "scale", 1, "usage")
+		f.Uint64Var(
+			&zoom, "zoom", 1, "map zoom level, varies depending provider")
+
+		rootCmd.AddCommand(c)
+		providerKeys[p] = serverCmd.Flags().String(p+"-key", "", "optional depending on the specific provider")
+	}
+	rootCmd.Execute()
 }
 
-func lookupLocation(lat, lng []string) ([]Result, error) {
-	size := len(lat)
-
-	if size > len(lng) {
-		size = len(lng)
-	}
-
-	results := []Result{}
-
-	for i := 0; i < size; i++ {
-		qry := url.Values{}
-		qry.Add("latlng", lat[i]+","+lng[i])
-
-		url := fmt.Sprintf("%s?%s", geourl, qry.Encode())
-
-		if r, err := lookup(url); err != nil {
-			return results, err
-		} else {
-			results = append(results, r)
-		}
-	}
-
-	return results, nil
+func restService(cmd *cobra.Command, args []string) {
+	fmt.Printf("rest service ready at http://%s\n", port)
+	RestService(port)
 }
 
-func lookup(url string) (Result, error) {
-	log.Println("url:", url)
-	resp, err := http.Get(url)
+func provider(cmd *cobra.Command, args []string) {
+	geo, err := providers.Geo(cmd.Use, apikey)
+	v := providers.Results{}
 
 	if err != nil {
-		return Result{}, err
+		fmt.Println(err.Error())
 	}
 
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-
-	var result GoogleResults
-
-	if err := json.Unmarshal(b, &result); err != nil {
-		return Result{}, err
+	for _, addr := range addrList {
+		if a, err := geo.Address(addr); err == nil {
+			v = append(v, a)
+		} else {
+			fmt.Println("skip:", addr, "error:", err.Error())
+		}
 	}
 
-	if result.Status != "OK" {
-		log.Println("result:", result)
-		return Result{}, nil
+	for _, loc := range locList {
+		if l, err := geo.Location(loc); err == nil {
+			v = append(v, l)
+		} else {
+			fmt.Println("skip:", loc, "error:", err.Error())
+		}
 	}
 
-	return Result{
-		Latitude:  result.Results[0].Location.Latitude,
-		Longitude: result.Results[0].Location.Longitude,
-		Address:   result.Results[0].Address,
-	}, nil
+	if b, err := Marshal(format, &v, pretty); err != nil {
+		fmt.Println("marshal error:", err)
+	} else {
+		if len(file) > 0 {
+			ioutil.WriteFile(file, b, os.ModePerm)
+		} else {
+			fmt.Println(string(b))
+		}
+	}
 }
