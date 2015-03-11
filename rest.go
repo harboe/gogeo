@@ -17,6 +17,7 @@ func RestService(port string) {
 	router.GET("/v1/:name/json", geoHandler)
 	router.GET("/v1/:name/xml", geoHandler)
 	router.GET("/v1/:name/txt", geoHandler)
+	router.NotFound = documentHandler
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
@@ -76,6 +77,10 @@ func imgHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	} else {
 		w.Write(b)
 	}
+}
+
+func helpHandler(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("documentation not implemented"))
 }
 
 func restGeoService(name string) (providers.GeoService, error) {
