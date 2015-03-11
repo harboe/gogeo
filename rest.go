@@ -17,7 +17,7 @@ func RestService(port string) {
 	router.GET("/v1/:name/json", geoHandler)
 	router.GET("/v1/:name/xml", geoHandler)
 	router.GET("/v1/:name/txt", geoHandler)
-	router.NotFound = documentHandler
+	router.NotFound = helpHandler
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
