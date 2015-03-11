@@ -44,7 +44,7 @@ func (g geoService) Location(loc providers.Location) (providers.Result, error) {
 	qry.Add("latlng", loc.String())
 
 	url := fmt.Sprintf("%s?%s", geourl, qry.Encode())
-	return g.googleGeoService(url)
+	return g.googleGeoService(url, loc.String())
 }
 
 func (g geoService) Address(address string) (providers.Result, error) {
@@ -52,7 +52,7 @@ func (g geoService) Address(address string) (providers.Result, error) {
 	qry.Add("address", address)
 
 	url := fmt.Sprintf("%s?%s", geourl, qry.Encode())
-	return g.googleGeoService(url)
+	return g.googleGeoService(url, address)
 }
 
 func (g geoService) Static(address []string, opts providers.MapOptions) ([]byte, error) {
@@ -76,7 +76,7 @@ func (g geoService) Static(address []string, opts providers.MapOptions) ([]byte,
 	return g.getResponseBody(url)
 }
 
-func (g geoService) googleGeoService(url string) (providers.Result, error) {
+func (g geoService) googleGeoService(url, qry string) (providers.Result, error) {
 	b, err := g.getResponseBody(url)
 
 	if err != nil {
@@ -94,6 +94,7 @@ func (g geoService) googleGeoService(url string) (providers.Result, error) {
 	}
 
 	return providers.Result{
+		Query:    qry,
 		Location: result.Results[0].Location,
 		Address:  result.Results[0].Address,
 	}, nil

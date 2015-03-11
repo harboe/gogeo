@@ -16,6 +16,7 @@ type (
 		Longitude float64 `json:"lng" xml:"location>lng"`
 	}
 	Result struct {
+		Query    string `json:"query" xml:"query,attr"`
 		Address  string `json:"address" xml:"address"`
 		Location `json:"location"`
 	}

@@ -55,7 +55,7 @@ func (b bingService) Location(loc providers.Location) (providers.Result, error) 
 	qry.Add("o", "json")
 
 	url := fmt.Sprintf("%s/%s?%s", geourl, loc, qry.Encode())
-	return b.bingGeoService(url)
+	return b.bingGeoService(url, loc.String())
 }
 
 func (b bingService) Address(address string) (providers.Result, error) {
@@ -65,7 +65,7 @@ func (b bingService) Address(address string) (providers.Result, error) {
 	qry.Add("maxResults", "1")
 
 	url := fmt.Sprintf("%s?%s", geourl, qry.Encode())
-	return b.bingGeoService(url)
+	return b.bingGeoService(url, address)
 }
 
 func (b bingService) Static(address []string, opts providers.MapOptions) ([]byte, error) {
@@ -90,7 +90,7 @@ func (b bingService) Static(address []string, opts providers.MapOptions) ([]byte
 	return []byte{}, errors.New("not implemeted")
 }
 
-func (b bingService) bingGeoService(url string) (providers.Result, error) {
+func (b bingService) bingGeoService(url, qry string) (providers.Result, error) {
 	body, err := b.getResponseBody(url)
 
 	if err != nil {
@@ -104,7 +104,7 @@ func (b bingService) bingGeoService(url string) (providers.Result, error) {
 	}
 
 	if v.Status != "OK" {
-		return providers.Result{}, errors.New("result: " + v.Status)
+		return providers.Result{}, errors.New(v.Status)
 	} else if len(v.Set[0].Resources) == 0 {
 		return providers.Result{}, errors.New("not found") //nothing found.
 	}
@@ -112,6 +112,7 @@ func (b bingService) bingGeoService(url string) (providers.Result, error) {
 	resx := v.Set[0].Resources[0]
 
 	return providers.Result{
+		Query:    qry,
 		Address:  resx.Address,
 		Location: providers.Location{resx.Coords[0], resx.Coords[1]},
 	}, nil
