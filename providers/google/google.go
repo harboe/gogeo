@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"log"
 	"net/url"
 
 	"github.com/harboe/gogeo/providers"
@@ -20,9 +19,15 @@ type (
 	geometry struct {
 		providers.Location `json:"location"`
 	}
+	components struct {
+		Long  string   `json:"long_name"`
+		Short string   `json:"short_name"`
+		Types []string `json:"types"`
+	}
 	result struct {
-		geometry `json:"geometry"`
-		Address  string `json:"formatted_address"`
+		Compenents []components `json:"address_components"`
+		geometry   `json:"geometry"`
+		Address    string `json:"formatted_address"`
 	}
 	results struct {
 		Results []result `json:"results"`
@@ -34,7 +39,7 @@ type (
 )
 
 func init() {
-	providers.RegisterGeo("google", func(key string) (providers.GeoService, error) {
+	providers.Register("google", func(key string) (providers.GeoService, error) {
 		return geoService{key}, nil
 	})
 }
@@ -73,11 +78,11 @@ func (g geoService) Static(address []string, opts providers.MapOptions) ([]byte,
 	qry.Add("size", opts.Size.String())
 
 	url := fmt.Sprintf("%s?%s", imgurl, qry.Encode())
-	return g.getResponseBody(url)
+	return providers.Cache(url, g.key)
 }
 
 func (g geoService) googleGeoService(url, qry string) (providers.Result, error) {
-	b, err := g.getResponseBody(url)
+	b, err := providers.Cache(url, g.key)
 
 	if err != nil {
 		return providers.Result{}, err
@@ -93,26 +98,43 @@ func (g geoService) googleGeoService(url, qry string) (providers.Result, error) 
 		return providers.Result{}, errors.New("result: " + result.Status)
 	}
 
-	return providers.Result{
-		Query:    qry,
-		Location: result.Results[0].Location,
-		Address:  result.Results[0].Address,
-	}, nil
+	// fmt.Printf("%#v\n", result)
+	// fmt.Println(string(b))
+
+	return result.toProviderResult(qry), nil
 }
 
-func (g geoService) getResponseBody(url string) ([]byte, error) {
-	if len(g.key) > 0 {
-		url = url + "&key=" + g.key
+func (r results) toProviderResult(qry string) providers.Result {
+	first := r.Results[0]
+	dic := map[string]string{}
+
+	for _, c := range first.Compenents {
+		dic[c.Types[0]] = c.Long
 	}
 
-	// fmt.Println("google:", url)
-	resp, err := http.Get(url)
-
-	// fmt.Println(resp)
-	if err != nil {
-		return []byte{}, err
+	state := ""
+	if val, ok := dic["administrative_area_level_1"]; ok {
+		state = val
+	}
+	street := ""
+	if val, ok := dic["street_number"]; ok {
+		street = fmt.Sprintf("%s %v", dic["route"], val)
+	} else {
+		street = dic["route"]
 	}
 
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	for key, val := range dic {
+		log.Println("-", key, "=>", val)
+	}
+
+	return providers.Result{
+		Query:    qry,
+		Street:   street,
+		Country:  dic["country"],
+		City:     dic["locality"],
+		Zip:      dic["postal_code"],
+		State:    state,
+		Location: first.Location,
+		Address:  first.Address,
+	}
 }

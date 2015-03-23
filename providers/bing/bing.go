@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 
 	"github.com/harboe/gogeo/providers"
@@ -24,6 +22,11 @@ type (
 	}
 	address struct {
 		Address string `json:"formattedAddress"`
+		Street  string `json:"addressLine"`
+		Country string `json:"countryRegion"`
+		Zip     string `json:"postalCode"`
+		City    string `json:"locality"`
+		State   string `json:"adminDistrict"`
 	}
 	resource struct {
 		point   `json:"point"`
@@ -44,7 +47,7 @@ type (
 )
 
 func init() {
-	providers.RegisterGeo("bing", func(key string) (providers.GeoService, error) {
+	providers.Register("bing", func(key string) (providers.GeoService, error) {
 		// validate key length, since bing requires a key
 		return bingService{key}, nil
 	})
@@ -91,7 +94,7 @@ func (b bingService) Static(address []string, opts providers.MapOptions) ([]byte
 }
 
 func (b bingService) bingGeoService(url, qry string) (providers.Result, error) {
-	body, err := b.getResponseBody(url)
+	body, err := providers.Cache(url, b.key)
 
 	if err != nil {
 		return providers.Result{}, err
@@ -114,21 +117,11 @@ func (b bingService) bingGeoService(url, qry string) (providers.Result, error) {
 	return providers.Result{
 		Query:    qry,
 		Address:  resx.Address,
+		Street:   resx.Street,
+		Country:  resx.Country,
+		Zip:      resx.Zip,
+		City:     resx.City,
+		State:    resx.State,
 		Location: providers.Location{resx.Coords[0], resx.Coords[1]},
 	}, nil
-}
-
-func (b bingService) getResponseBody(url string) ([]byte, error) {
-	if len(b.key) > 0 {
-		url = url + "&key=" + b.key
-	}
-
-	resp, err := http.Get(url)
-
-	if err != nil {
-		return []byte{}, err
-	}
-
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
 }

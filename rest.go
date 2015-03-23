@@ -5,11 +5,23 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 
 	"github.com/harboe/gogeo/providers"
 )
+
+const helpTemplate = `
+<html>
+<head>
+	<title>gogeo help</title>
+</head>
+<body>
+
+</body>
+</html>`
 
 func RestService(port string) {
 	router := httprouter.New()
@@ -17,13 +29,48 @@ func RestService(port string) {
 	router.GET("/v1/:name/json", geoHandler)
 	router.GET("/v1/:name/xml", geoHandler)
 	router.GET("/v1/:name/txt", geoHandler)
-	router.NotFound = helpHandler
+	// router.NotFound = helpHandler
 
-	log.Fatal(http.ListenAndServe(port, router))
+	routeHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		router.ServeHTTP(w, req)
+	})
+
+	chain := alice.New(loggingHandler, corsHandlers).Then(routeHandler)
+
+	log.Fatal(http.ListenAndServe(port, chain))
+}
+
+func loggingHandler(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		t1 := time.Now()
+		next.ServeHTTP(w, r)
+		t2 := time.Now()
+		log.Printf("[%s] %q %v\n", r.Method, r.URL.String(), t2.Sub(t1))
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func corsHandlers(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, req *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		// Stop here if its Preflighted OPTIONS request
+		if req.Method == "OPTIONS" {
+			return
+		}
+		next.ServeHTTP(w, req)
+	}
+	return http.HandlerFunc(fn)
 }
 
 func geoHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	geo, err := restGeoService(ps.ByName("name"))
+	log.Println("here...")
+	geo, err := providers.Geo(ps.ByName("name"))
 
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -39,6 +86,7 @@ func geoHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	}
 
 	for _, a := range address(req) {
+		log.Println("address:", a)
 		if r, err := geo.Address(a); err == nil {
 			results = append(results, r)
 		}
@@ -56,7 +104,7 @@ func geoHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 }
 
 func imgHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	geo, err := restGeoService(ps.ByName("name"))
+	geo, err := providers.Geo(ps.ByName("name"))
 
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -80,18 +128,16 @@ func imgHandler(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 }
 
 func helpHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("documentation not implemented"))
-}
 
-func restGeoService(name string) (providers.GeoService, error) {
-	keyP := providerKeys[name]
-	keyV := ""
+	for _, p := range providers.Providers() {
+		help := `
+			` + p + `
+		`
 
-	if keyP != nil {
-		keyV = *keyP
+		w.Write([]byte(help))
 	}
 
-	return providers.Geo(name, keyV)
+	w.Write([]byte("documentation not implemented"))
 }
 
 func mapOptions(req *http.Request) providers.MapOptions {

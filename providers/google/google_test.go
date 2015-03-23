@@ -1,29 +1,29 @@
 package google
 
 import (
-	"os"
-	"io/ioutil"
-	"log"
 	"testing"
 
 	"github.com/harboe/gogeo/providers"
 )
 
 var (
-	addressTests = map[string]providers.Result {
-		"alekistevej 203, vanlose": providers.Result {
+	addressTests = map[string]providers.Result{
+		"copenhagem": providers.Result{
+			Address: "Copenhagen, Denmark",
+		},
+		"alekistevej 203, vanlose": providers.Result{
 			Address: "Ålekistevej 203, 2720 Vanløse, Denmark",
 			Location: providers.Location{
-				Latitude: 55.694639,
+				Latitude:  55.694639,
 				Longitude: 12.4796647,
 			},
 		},
 	}
-	locationTests = map[string]providers.Result {
-		"55.694639,12.4796647": providers.Result {
+	locationTests = map[string]providers.Result{
+		"55.694639,12.4796647": providers.Result{
 			Address: "Ålekistevej 203, 2720 Vanløse, Denmark",
 			Location: providers.Location{
-				Latitude: 55.694639,
+				Latitude:  55.694639,
 				Longitude: 12.4796647,
 			},
 		},
@@ -62,12 +62,12 @@ func TestGeoServiceLocation(t *testing.T) {
 	}
 }
 
-func TestMapServiceAddress(t *testing.T) {
-	m := mapService{}
-	b, err := m.Address([]string{"alekistevej 203","vigerslev alle 77, valby"}, providers.DefaultMapOptions)
+// func TestMapServiceAddress(t *testing.T) {
+// 	m := mapService{}
+// 	b, err := m.Address([]string{"alekistevej 203","vigerslev alle 77, valby"}, providers.DefaultMapOptions)
 
-	log.Println("byte:", len(b))
-	log.Println("err:", err)
+// 	log.Println("byte:", len(b))
+// 	log.Println("err:", err)
 
-	ioutil.WriteFile("test.png", b, os.ModePerm)
-}
+// 	ioutil.WriteFile("test.png", b, os.ModePerm)
+// }

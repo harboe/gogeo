@@ -18,6 +18,11 @@ type (
 	Result struct {
 		Query    string `json:"query" xml:"query,attr"`
 		Address  string `json:"address" xml:"address"`
+		Street   string `json:"street,omitempty" xml:"street,omitempty"`
+		Country  string `json:"country" xml:"country"`
+		City     string `json:"city,omitempty" xml:"city,omitempty"`
+		Zip      string `json:"zip,omitempty" xml:"zip,omitempty"`
+		State    string `json:"state,omitempty" xml:"state,omitempty"`
 		Location `json:"location"`
 	}
 	Results []Result

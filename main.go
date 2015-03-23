@@ -10,20 +10,19 @@ import (
 	"github.com/harboe/gogeo/providers"
 	_ "github.com/harboe/gogeo/providers/bing"
 	_ "github.com/harboe/gogeo/providers/google"
+	_ "github.com/harboe/gogeo/providers/mapquest"
 )
 
 var (
-	port         string
-	format       string
-	addrList     AddressList
-	locList      LocationList
-	size         string
-	zoom         uint64
-	scale        uint64
-	pretty       bool
-	apikey       string
-	data         string
-	providerKeys = map[string]*string{}
+	port     string
+	format   string
+	addrList AddressList
+	locList  LocationList
+	size     string
+	zoom     uint64
+	scale    uint64
+	pretty   bool
+	data     string
 )
 
 func main() {
@@ -41,7 +40,7 @@ func main() {
 	}
 	rootCmd.AddCommand(serverCmd)
 
-	for _, provider := range providers.GeoProviders() {
+	for _, provider := range providers.Providers() {
 		c := &cobra.Command{
 			Use:     provider,
 			Short:   provider + " provider",
@@ -70,8 +69,6 @@ func main() {
 			&format, "format", "json", "output format json|xml|txt")
 		f.BoolVar(
 			&pretty, "pretty", false, "pretty print")
-		p.StringVar(
-			&apikey, "key", "", "optional depending on the specific provider")
 		imgCmd.Flags().StringVar(
 			&size, "size", "250x250", "map size use for png")
 		imgCmd.Flags().Uint64Var(
@@ -80,7 +77,11 @@ func main() {
 			&zoom, "zoom", 0, "map zoom level, varies depending provider")
 
 		rootCmd.AddCommand(c)
-		providerKeys[provider] = serverCmd.Flags().String(provider+"-key", "", "optional depending on the specific provider")
+
+		providers.AddApiKey(provider,
+			serverCmd.Flags().String(provider+"-key", "", "optional depending on the specific provider"))
+		providers.AddApiKey(provider,
+			p.String("key", "", "optional depending on the specific provider"))
 	}
 	rootCmd.Execute()
 }
@@ -97,7 +98,7 @@ func runImageProvider(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	geo, err := providers.Geo(cmd.Parent().Use, apikey)
+	geo, err := providers.Geo(cmd.Parent().Use)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -123,7 +124,7 @@ func runImageProvider(cmd *cobra.Command, args []string) {
 }
 
 func runProvider(cmd *cobra.Command, args []string) {
-	geo, err := providers.Geo(cmd.Use, apikey)
+	geo, err := providers.Geo(cmd.Use)
 	v := providers.Results{}
 
 	if err != nil {

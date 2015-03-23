@@ -2,29 +2,30 @@ package providers
 
 import (
 	"errors"
+	"os"
 	"strings"
 )
 
 var (
-	geoProviders = map[string]GeoServiceConstructor{}
+	geoProviders    = map[string]GeoServiceConstructor{}
+	geoProviderKeys = map[string][]*string{}
 )
 
-func Geo(name, apikey string) (GeoService, error) {
+func Geo(name string) (GeoService, error) {
 	if c, ok := geoProviders[name]; ok {
-		return c(apikey)
+		return c(getApiKey(name))
 	}
 
 	return nil, errors.New("no provided found named: " + name +
 		". valid providers are: " +
-		strings.Join(GeoProviders(), ","))
+		strings.Join(Providers(), ","))
 }
 
-func RegisterGeo(name string, constuctor GeoServiceConstructor) {
+func Register(name string, constuctor GeoServiceConstructor) {
 	geoProviders[name] = constuctor
-	// fmt.Println("geo providers:", geoProviders, "is", geoProviders[name])
 }
 
-func GeoProviders() []string {
+func Providers() []string {
 	list := []string{}
 
 	for k, _ := range geoProviders {
@@ -32,4 +33,18 @@ func GeoProviders() []string {
 	}
 
 	return list
+}
+
+func AddApiKey(name string, keyP *string) {
+	geoProviderKeys[name] = append(geoProviderKeys[name], keyP)
+}
+
+func getApiKey(name string) string {
+	for _, p := range geoProviderKeys[name] {
+		if p != nil && len(*p) > 0 {
+			return *p
+		}
+	}
+
+	return os.Getenv(strings.ToUpper("gogeo_" + name + "_key"))
 }
