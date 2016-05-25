@@ -9,9 +9,9 @@ CLI and http server, for reversed geocoding, address lookup, and image rendering
 command flags
 
 * port - server address for the http server to listen on.
-* bing-key - if specifed request using bing doesn't need to provider a key
-* google-key - if specifed request using google doesn't need to provider a key
-* maprequest-key - if specifed request using maprequest doesn't need to provider a key
+* bing-key - if specifed request using bing doesn't need to provider a key, otherwise it will default to env: GOGEO_BING
+* google-key - if specifed request using google doesn't need to provider a key, otherwise it will default to env: GOGEO_GOOGLE
+* mapquest-key - if specifed request using maprequest doesn't need to provider a key, otherwise it will default to env: GOGEO_MAPQUEST
 
 ---
 
