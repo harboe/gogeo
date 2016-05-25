@@ -4,21 +4,18 @@ a simple wrapper for google maps api.
 
 ---
 
-  /v1/geo
+  /goggle/[json,yml or xml]
 
   parameters:
-  * address - The street address that you want to geocode, in the format used by the national postal service of the country concerned. 
-  * lat - The textual latitude value for which you wish to obtain the closest, human-readable address.
-  * lng - The textual longitude value for which you wish to obtain the closest, human-readable address.
+  * addr - The street address that you want to geocode, in the format used by the national postal service of the country concerned.
+  * loc - The textual latitude value for which you wish to obtain the closest, human-readable address.
 
 ---
 
-  /v1/geo.png
+  /google/png
 
   parameters:
-  * address - The street address that you want to geocode, in the format used by the national postal service of the country concerned. 
-  * lat - The textual latitude value for which you wish to obtain the closest, human-readable address.
-  * lng - The textual longitude value for which you wish to obtain the closest, human-readable address.
-  * size (optional)
+  * addr - The street address that you want to geocode, in the format used by the national postal service of the country concerned.
+  * size (optional) image size: can be specified as {widthxheight} or {size}
   * zoom (optional)
   * scale (optional)

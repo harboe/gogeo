@@ -12,15 +12,15 @@ type (
 		Marshal(v interface{}, pretty bool) ([]byte, error)
 	}
 	jsonEncoding struct{}
-	xmlEncoding struct{}
-	txtEncoding struct{}
+	xmlEncoding  struct{}
+	yamlEncoding struct{}
 )
 
 var (
 	encoders = map[string]Encoding{
 		"json": jsonEncoding{},
-		"xml": xmlEncoding{},
-		"txt": txtEncoding{},
+		"xml":  xmlEncoding{},
+		"yml":  yamlEncoding{},
 	}
 )
 
@@ -40,12 +40,12 @@ func (e xmlEncoding) Marshal(v interface{}, pretty bool) ([]byte, error) {
 	}
 }
 
-func (e txtEncoding) Marshal(v interface{}, pretty bool) ([]byte, error) {
+func (e yamlEncoding) Marshal(v interface{}, pretty bool) ([]byte, error) {
 	return yaml.Marshal(&v)
 }
 
-func Marshal(ct string, v interface{}, pretty bool) ([]byte, error) {
-	e, ok := encoders[ct];
+func Marshal(encoder string, v interface{}, pretty bool) ([]byte, error) {
+	e, ok := encoders[encoder]
 
 	if !ok {
 		e = encoders["json"]

@@ -1,0 +1,57 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "6cb3b85ef5a0efef77caef88363ec4d4b5c0976d",
+			"revisionTime": "2016-05-04T13:01:55Z"
+		},
+		{
+			"checksumSHA1": "mZK+4q1Xr8z0AwkCAgO+7Rb8xk8=",
+			"path": "github.com/julienschmidt/httprouter",
+			"revision": "77366a47451a56bb3ba682481eed85b64fea14e8",
+			"revisionTime": "2016-02-19T15:40:26Z"
+		},
+		{
+			"checksumSHA1": "Lc5CWD5nzSttJNateoWlPgFE3Vw=",
+			"path": "github.com/justinas/alice",
+			"revision": "052b8b6c18edb9db317af86806d8e00ebaa94160",
+			"revisionTime": "2016-05-12T13:42:31Z"
+		},
+		{
+			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "6cb3b85ef5a0efef77caef88363ec4d4b5c0976d",
+			"revisionTime": "2016-05-04T13:01:55Z"
+		},
+		{
+			"checksumSHA1": "CsXTWY97co9R3G9L6cu1bqeVHE0=",
+			"path": "github.com/spf13/cobra",
+			"revision": "f368244301305f414206f889b1735a54cfc8bde8",
+			"revisionTime": "2016-05-17T17:19:29Z"
+		},
+		{
+			"checksumSHA1": "s0GYwa3YNJJXON/b+6ci2Sz9mEw=",
+			"path": "github.com/spf13/pflag",
+			"revision": "cb88ea77998c3f024757528e3305022ab50b43be",
+			"revisionTime": "2016-03-17T00:02:28Z"
+		},
+		{
+			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "6cb3b85ef5a0efef77caef88363ec4d4b5c0976d",
+			"revisionTime": "2016-05-04T13:01:55Z"
+		},
+		{
+			"checksumSHA1": "+OgOXBoiQ+X+C2dsAeiOHwBIEH0=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "a83829b6f1293c91addabc89d0571c246397bbf4",
+			"revisionTime": "2016-03-01T20:40:22Z"
+		}
+	],
+	"rootPath": "github.com/harboe/gogeo"
+}
