@@ -1,6 +1,8 @@
 # GOGEO:
 
-a simple wrapper for google maps api.
+CLI and http server, for reversed geocoding, address lookup, and image rendering. for varies providers, in a common format. 
+
+![Alt text](gogeo.png?raw=true "Gogeo")
 
 ## gogeo http
 
